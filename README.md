@@ -4,7 +4,7 @@ Desafio Técnico Full-Stack 2025/02
 
 Uma solução completa de engenharia de dados e visualização para monitoramento climático em tempo real. O sistema coleta dados meteorológicos, processa-os através de uma fila de mensagens distribuída e apresenta insights gerados por IA num dashboard moderno.
 
-Aqui o video solicitado para o desafio --->  https://youtu.be/L9OlZqS1NmQ
+Aqui o link do vídeo solicitado para o desafio --->  https://youtu.be/L9OlZqS1NmQ
 
 🏗️ Arquitetura do Sistema
 
