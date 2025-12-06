@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_server
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  collector:
+    build:
+      context: ./service-collector
+      dockerfile: Dockerfile
+    container_name: weather_collector
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_QUEUE: weather_logs_queue
+      COLLECTION_INTERVAL_SECONDS: 60
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: always
+
+  worker-go:
+    build:
+      context: ./service-worker-go
+      dockerfile: Dockerfile
+    container_name: gdash_go_worker
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+      RABBITMQ_QUEUE: weather_logs_queue
+      NESTJS_API_URL: http://backend-nestjs:3000/api/weather/logs
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      backend-nestjs:
+        condition: service_started
+    restart: always
+
+  backend-nestjs:
+    build:
+      context: ./backend-nestjs
+      dockerfile: Dockerfile
+      target: development 
+    container_name: gdash_api
+    ports:
+      - "3000:3000"
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/gdash_db 
+      NODE_ENV: development
+    command: npm run start:dev 
+    depends_on:
+      mongodb:
+        condition: service_started
+    restart: always
+
+  mongodb:
+    image: mongo:latest
+    container_name: gdash_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  frontend-react:
+    build:
+      context: ./frontend-react
+      dockerfile: Dockerfile
+    container_name: gdash_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend-nestjs:
+        condition: service_started
+    restart: always
+
+volumes:
+  mongo_data:
